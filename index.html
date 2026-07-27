@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>東武動物公園駅 久喜方面発車案内ディスプレイ</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@700&family=Noto+Sans+JP:wght@700;900&display=swap');
+
+    :root {
+      --bg-board: #000000;
+      --border-outer: #222222;
+      --text-white: #ffffff;
+      --text-yellow: #ffcc00;
+      --text-orange: #ff9900;
+      --text-gray: #aaaaaa;
+      --badge-ltd: #d90429;
+      --badge-express: #e6007e;
+      --badge-semi: #009944;
+      --badge-local: #ffffff;
+      --badge-end: #333333;
+      --delay-red: #ff3333;
+      --ok-green: #00ff66;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: #0d0d0d;
+      color: var(--text-white);
+      font-family: 'Noto Sans JP', sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+      overflow-x: hidden;
+    }
+
+    .board-wrapper {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .board-container {
+      background-color: var(--bg-board);
+      width: 1100px;
+      border: 12px solid var(--border-outer);
+      border-radius: 8px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.9);
+      padding: 20px;
+      position: relative;
+      transform-origin: top center;
+    }
+
+    .board-container.is-delayed {
+      border-color: var(--delay-red);
+      animation: pulse-border 2s infinite;
+    }
+
+    @keyframes pulse-border {
+      0% { border-color: #ff3333; }
+      50% { border-color: #660000; }
+      100% { border-color: #ff3333; }
+    }
+
+    .top-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #333;
+      height: 50px;
+      margin-bottom: 12px;
+    }
+
+    .banner-left { display: flex; align-items: center; width: 610px; min-width: 610px; }
+    .banner-right { display: flex; align-items: center; justify-content: flex-end; gap: 15px; width: 390px; min-width: 390px; }
+
+    .platform-num {
+      background: linear-gradient(135deg, #111, #333);
+      color: #fff;
+      font-size: 1.35rem;
+      font-weight: 900;
+      width: 72px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #fff;
+      border-right: 6px solid #f60;
+      margin-right: 15px;
+      font-family: 'Chakra Petch', sans-serif;
+      flex-shrink: 0;
+    }
+
+    .banner-text {
+      font-size: 1.25rem;
+      color: #ddd;
+      font-weight: bold;
+      line-height: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      width: 520px;
+      min-width: 520px;
+    }
+
+    .clock-box {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-yellow);
+      background: #111;
+      border: 1px solid #333;
+      padding: 2px 14px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+    }
+
+    .clock-colon {
+      display: inline-block;
+      width: 0.4em;
+      text-align: center;
+      transition: opacity 0.1s;
+    }
+
+    .clock-colon.blink-off { opacity: 0; }
+
+    .audio-btn {
+      background: #222;
+      color: #ffcc00;
+      border: 1px solid #ffcc00;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .audio-btn.enabled {
+      background: #00ff66;
+      color: #000;
+      border-color: #00ff66;
+    }
+
+    .board-header {
+      display: grid;
+      grid-template-columns: 220px 190px 1fr 140px;
+      color: var(--text-gray);
+      font-size: 0.95rem;
+      border-bottom: 1px solid #444;
+      height: 28px;
+      line-height: 28px;
+      text-align: center;
+    }
+
+    .board-row {
+      display: grid;
+      grid-template-columns: 220px 190px 1fr 140px;
+      align-items: center;
+      border-bottom: 1px solid #222;
+      text-align: center;
+      height: 75px;
+    }
+
+    .dept-time {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 3.2rem;
+      font-weight: 700;
+      color: var(--text-white);
+      line-height: 75px;
+    }
+
+    .badge-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+    }
+
+    .train-badge {
+      width: 165px;
+      height: 38px;
+      line-height: 38px;
+      font-size: 1.1rem;
+      font-weight: 900;
+      border-radius: 4px;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      padding: 0 4px;
+    }
+
+    .badge-ltd { background-color: var(--badge-ltd); color: #fff; }
+    .badge-express { background-color: var(--badge-express); color: #fff; }
+    .badge-semi { background-color: var(--badge-semi); color: #fff; }
+    .badge-local { background-color: var(--badge-local); color: #000; }
+    .badge-end { background-color: var(--badge-end); color: #aaa; }
+
+    .destination {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--text-white);
+      text-align: left;
+      padding: 0 20px 0 30px;
+      line-height: 75px;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .dest-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .first-train-badge {
+      background: #ff9900;
+      color: #000;
+      font-size: 0.75rem;
+      font-weight: 900;
+      width: 58px;
+      height: 24px;
+      line-height: 24px;
+      border-radius: 3px;
+      text-align: center;
+      display: inline-block;
+      letter-spacing: 0.5px;
+      font-family: 'Chakra Petch', 'Noto Sans JP', sans-serif;
+      flex-shrink: 0;
+      margin-left: 15px;
+    }
+
+    .cars-info {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--text-white);
+      line-height: 75px;
+    }
+
+    .cars-unit { font-size: 1rem; font-weight: normal; margin-left: 4px; }
+
+    .notice-bar {
+      background-color: #111;
+      color: var(--ok-green);
+      border: 1px solid #333;
+      height: 42px;
+      margin: 10px 0;
+      font-size: 1.15rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 15px;
+      overflow: hidden;
+      position: relative;
+      white-space: nowrap;
+    }
+
+    .notice-bar.has-delay {
+      background-color: #4a0000;
+      color: #ffffff;
+      border-color: var(--delay-red);
+      font-size: 1.2rem;
+    }
+
+    .notice-text-content {
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    .notice-text-content.scroll {
+      padding-left: 100%;
+      animation: marquee 18s linear infinite;
+    }
+
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-100%); }
+    }
+
+    .info-section {
+      background: #060b18;
+      border: 2px solid #1c2d4a;
+      border-radius: 8px;
+      padding: 12px 18px;
+      height: 155px;
+    }
+
+    .info-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 28px;
+      margin-bottom: 8px;
+    }
+
+    .info-title-box { display: flex; align-items: center; gap: 12px; width: 760px; min-width: 760px; }
+
+    .route-badge {
+      background: linear-gradient(135deg, #ff9900, #ff6600);
+      color: #000;
+      font-size: 0.8rem;
+      font-weight: 900;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-family: 'Chakra Petch', sans-serif;
+      width: 92px;
+      min-width: 92px;
+      text-align: center;
+    }
+
+    .info-title-text {
+      color: var(--text-orange);
+      font-size: 1.15rem;
+      font-weight: 900;
+      width: 650px;
+      min-width: 650px;
+      white-space: nowrap;
+    }
+
+    .info-countdown-box {
+      background: #000;
+      border: 1px solid #2a3a57;
+      padding: 2px 12px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 1.15rem;
+      color: var(--ok-green);
+      font-weight: bold;
+      width: 125px;
+      min-width: 125px;
+      text-align: center;
+    }
+
+    .info-connection-flow {
+      display: grid;
+      grid-template-columns: 1fr 28px 1.5fr 28px 1fr;
+      align-items: center;
+      gap: 6px;
+      height: 95px;
+    }
+
+    .step-card {
+      background: #111625;
+      border: 1px solid #233555;
+      border-radius: 6px;
+      padding: 8px 6px;
+      height: 95px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      text-align: center;
+    }
+
+    .step-card.highlight { background: #0f1c33; border-color: #38bdf8; }
+
+    .step-station-row { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
+    .step-station-name {
+      font-size: 0.95rem;
+      color: #e2e8f0;
+      font-weight: 900;
+      display: inline-block;
+      min-width: 132px;
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    .platform-badge {
+      background: #ffcc00;
+      color: #000;
+      font-size: 0.7rem;
+      font-weight: 900;
+      padding: 1px 5px;
+      border-radius: 3px;
+      width: 62px;
+      min-width: 62px;
+      text-align: center;
+    }
+
+    .step-time-main {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-yellow);
+      line-height: 1;
+    }
+
+    .step-time-transfer {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-orange);
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .step-sub-label {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      font-weight: bold;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+    }
+
+    .arrow { color: var(--text-orange); font-size: 1.2rem; font-weight: bold; text-align: center; }
+
+    .train-badge.long-label { font-size: 0.78rem; letter-spacing: -0.5px; }
+    .stop-guide { display: flex; flex-direction: column; }
+    .stop-service-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      height: 27px;
+      white-space: nowrap;
+    }
+    .stop-service-name { color: var(--text-yellow); font-size: 1.1rem; font-weight: 900; }
+    .stop-destination { color: #fff; font-size: 1rem; font-weight: 900; }
+    .stop-list {
+      height: 61px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 10px;
+      color: #fff;
+      font-size: 1.14rem;
+      line-height: 1.45;
+      font-weight: 900;
+      text-align: center;
+      white-space: normal;
+      overflow: hidden;
+    }
+    .stop-list.compact { font-size: 0.82rem; line-height: 1.35; }
+  </style>
+</head>
+<body>
+
+  <div class="board-wrapper">
+    <div class="board-container" id="main-board">
+      
+      <!-- 1. 東武動物公園駅 上りホーム案内 ＆ 時計 -->
+      <div class="top-banner">
+        <div class="banner-left">
+          <div class="platform-num">4</div>
+          <div class="banner-text" id="top-banner-text">久喜・館林・伊勢崎 方面</div>
+        </div>
+        <div class="banner-right">
+          <button class="audio-btn" id="audio-toggle-btn" onclick="toggleAudio()">🔊 音声: OFF (クリックで有効化)</button>
+          <div class="clock-box">
+            <span id="clock-hour">00</span>
+            <span class="clock-colon" id="clock-colon">:</span>
+            <span id="clock-min">00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. 発車標テーブルヘッダー -->
+      <div class="board-header">
+        <div id="hdr-dept">Departure time</div>
+        <div id="hdr-train">Train</div>
+        <div style="text-align: left; padding-left: 30px;" id="hdr-to">To</div>
+        <div id="hdr-cars">Cars</div>
+      </div>
+
+      <!-- 先発 -->
+      <div class="board-row">
+        <div class="dept-time" id="m1-time">--:--</div>
+        <div class="badge-container"><span class="train-badge badge-local" id="m1-badge">Local</span></div>
+        <div class="destination" id="m1-dest">--</div>
+        <div class="cars-info" id="m1-cars">--<span class="cars-unit" id="m1-unit">Cars</span></div>
+      </div>
+
+      <!-- 運行状況テロップ -->
+      <div class="notice-bar" id="notice-text">
+        <span class="notice-text-content" id="notice-content">【運行状況】東武線：平常運転</span>
+      </div>
+
+      <!-- 次発 -->
+      <div class="board-row">
+        <div class="dept-time" id="m2-time">--:--</div>
+        <div class="badge-container"><span class="train-badge badge-local" id="m2-badge">Local</span></div>
+        <div class="destination" id="m2-dest">--</div>
+        <div class="cars-info" id="m2-cars">--<span class="cars-unit" id="m2-unit">Cars</span></div>
+      </div>
+
+      <!-- 次々発 -->
+      <div class="board-row" style="border: none;">
+        <div class="dept-time" id="m3-time">--:--</div>
+        <div class="badge-container"><span class="train-badge badge-local" id="m3-badge">Local</span></div>
+        <div class="destination" id="m3-dest">--</div>
+        <div class="cars-info" id="m3-cars">--<span class="cars-unit" id="m3-unit">Cars</span></div>
+      </div>
+
+      <!-- 3. 次列車の停車駅案内 -->
+      <div class="info-section stop-guide">
+        <div class="info-header">
+          <div class="info-title-box">
+            <span class="route-badge" id="route-badge-label">停車駅</span>
+            <span class="info-title-text" id="info-card-title">次の列車の停車駅</span>
+          </div>
+          <div class="info-countdown-box" id="info-countdown">あと 00:00</div>
+        </div>
+        <div class="stop-service-row">
+          <span class="stop-service-name" id="stop-service-name">--</span>
+          <span class="stop-destination" id="stop-destination">--</span>
+        </div>
+        <div class="stop-list" id="stop-list">東武動物公園 → --</div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const ODPT_API_KEY = "c7im4fjqeajwpurz9a295jbpdctk5q3mw9orll1m0hgbm9t016vrfvtpftebkhln";
+
+    let isEnglish = false;
+    let audioEnabled = false;
+    let audioCtx = null;
+    let lastChimeTime = "";
+    let realtimeDelayMessage = ""; 
+    let isDelayedStatus = false;
+
+    function adjustScale() {
+      const container = document.getElementById("main-board");
+      const wrapperWidth = window.innerWidth - 20;
+      const baseWidth = 1124; 
+      if (wrapperWidth < baseWidth) {
+        const scale = wrapperWidth / baseWidth;
+        container.style.transform = `scale(${scale})`;
+        document.body.style.height = `${container.offsetHeight * scale}px`;
+      } else {
+        container.style.transform = "none";
+        document.body.style.height = "100vh";
+      }
+    }
+
+    window.addEventListener('resize', adjustScale);
+    window.addEventListener('load', adjustScale);
+
+    function updateClock() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const sec = now.getSeconds();
+
+      document.getElementById("clock-hour").textContent = h;
+      document.getElementById("clock-min").textContent = m;
+
+      const colonEl = document.getElementById("clock-colon");
+      if (sec % 2 === 1) {
+        colonEl.classList.add("blink-off");
+      } else {
+        colonEl.classList.remove("blink-off");
+      }
+    }
+
+    async function checkRealtimeInfo() {
+      try {
+        const tobuUrl = `https://api.odpt.org/api/v4/odpt:TrainInformation?odpt:operator=odpt.Operator:Tobu&acl:consumerKey=${ODPT_API_KEY}`;
+        const tobuRes = await fetch(tobuUrl).catch(() => null);
+
+        let delayMsgs = [];
+
+        if (tobuRes && tobuRes.ok) {
+          const tobuData = await tobuRes.json();
+          for (let item of tobuData) {
+            const rawText = item["odpt:trainInformationText"] ? item["odpt:trainInformationText"].ja : "";
+            if (rawText && !rawText.includes("平常")) {
+              delayMsgs.push(`【東武】${rawText}`);
+              break;
+            }
+          }
+        }
+
+        if (delayMsgs.length > 0) {
+          isDelayedStatus = true;
+          realtimeDelayMessage = delayMsgs.join(" ／ ");
+        } else {
+          isDelayedStatus = false;
+          realtimeDelayMessage = "";
+        }
+      } catch (e) {
+        console.warn("ODPT API Error:", e);
+      }
+    }
+
+    function updateNoticeDisplay(text, isDelay) {
+      const noticeBar = document.getElementById("notice-text");
+      const noticeContent = document.getElementById("notice-content");
+      
+      noticeContent.textContent = text;
+
+      if (isDelay) {
+        noticeBar.className = "notice-bar has-delay";
+      } else {
+        noticeBar.className = "notice-bar";
+      }
+
+      if (noticeContent.offsetWidth > noticeBar.clientWidth - 30) {
+        noticeContent.classList.add("scroll");
+      } else {
+        noticeContent.classList.remove("scroll");
+      }
+    }
+
+    function playChime() {
+      if (!audioEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const now = audioCtx.currentTime;
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(659.25, now);
+        gain1.gain.setValueAtTime(0.3, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.8);
+
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(523.25, now + 0.35);
+        gain2.gain.setValueAtTime(0.3, now + 0.35);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.start(now + 0.35);
+        osc2.stop(now + 1.2);
+      } catch (e) { console.warn("Audio error:", e); }
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      const btn = document.getElementById("audio-toggle-btn");
+      if (audioEnabled) {
+        btn.classList.add("enabled");
+        playChime();
+      } else {
+        btn.classList.remove("enabled");
+      }
+      updateHeaderTexts();
+    }
+
+    document.body.addEventListener('click', () => {
+      if (!audioEnabled) toggleAudio();
+    }, { once: true });
+
+    setInterval(() => {
+      isEnglish = !isEnglish;
+      updateHeaderTexts();
+      updateMonitor();
+    }, 3000);
+
+    function updateHeaderTexts() {
+      document.getElementById("hdr-dept").textContent = isEnglish ? "Departure time" : "発車時刻";
+      document.getElementById("hdr-train").textContent = isEnglish ? "Train" : "種別";
+      document.getElementById("hdr-to").textContent = isEnglish ? "To" : "行先";
+      document.getElementById("hdr-cars").textContent = isEnglish ? "Cars" : "両数";
+      
+      document.getElementById("m1-unit").textContent = isEnglish ? "Cars" : "両";
+      document.getElementById("m2-unit").textContent = isEnglish ? "Cars" : "両";
+      document.getElementById("m3-unit").textContent = isEnglish ? "Cars" : "両";
+
+      document.getElementById("top-banner-text").textContent = isEnglish 
+        ? "for Kuki, Tatebayashi, Isesaki"
+        : "久喜・館林・伊勢崎 方面";
+
+      document.getElementById("info-card-title").textContent =
+        isEnglish ? "Stops for the next train" : "次の列車の停車駅";
+      document.getElementById("route-badge-label").textContent = isEnglish ? "STOPS" : "停車駅";
+
+      const btn = document.getElementById("audio-toggle-btn");
+      if (audioEnabled) {
+        btn.textContent = isEnglish ? "🔊 Audio: ON" : "🔊 音声: ON（予告チャイム有効）";
+      } else {
+        btn.textContent = isEnglish ? "🔊 Audio: OFF (click to enable)" : "🔊 音声: OFF（クリックで有効化）";
+      }
+    }
+
+    const jrDestinationEn = {
+      "熱海": "Atami",
+      "上野": "Ueno",
+      "大船": "Ofuna",
+      "平塚": "Hiratsuka",
+      "国府津": "Kozu",
+      "逗子": "Zushi",
+      "小田原": "Odawara",
+      "品川": "Shinagawa",
+      "伊東": "Ito",
+      "大宮": "Omiya"
+    };
+
+    function connectionLabel(data) {
+      if (data.shiraokaArr === "当日接続なし") {
+        return isEnglish ? "No connection today" : "当日接続なし";
+      }
+      if (!data.jrType || !data.jrDest) {
+        return isEnglish ? "JR Utsunomiya Line" : "JR宇都宮線";
+      }
+      if (isEnglish) {
+        const type = data.jrType === "普通" ? "Local" : data.jrType;
+        const destination = jrDestinationEn[data.jrDest] || data.jrDest;
+        return `${type} for ${destination}`;
+      }
+      return `${data.jrType}（${data.jrDest}行）`;
+    }
+
+    // ★ 日本の祝日・振替休日を自動判定する関数 ★
+    function isJapaneseHoliday(date) {
+      const year = date.getFullYear();
+      const m = date.getMonth() + 1;
+      const d = date.getDate();
+      const dayOfWeek = date.getDay(); // 0:Sun, 6:Sat
+
+      // 固定祝日
+      if (m === 1 && d === 1) return true;  // 元日
+      if (m === 2 && d === 11) return true; // 建国記念の日
+      if (m === 2 && d === 23) return true; // 天皇誕生日
+      if (m === 4 && d === 29) return true; // 昭和の日
+      if (m === 5 && d === 3) return true;  // 憲法記念日
+      if (m === 5 && d === 4) return true;  // みどりの日
+      if (m === 5 && d === 5) return true;  // こどもの日
+      if (m === 8 && d === 11) return true; // 山の日
+      if (m === 11 && d === 3) return true; // 文化の日
+      if (m === 11 && d === 23) return true;// 勤労感謝の日
+
+      // 春分の日・秋分の日（簡易計算）
+      const vernalEquinox = Math.floor(20.8431 + 0.242194 * (year - 2000)) - Math.floor((year - 2000) / 4);
+      if (m === 3 && d === vernalEquinox) return true;
+      const autumnalEquinox = Math.floor(23.2488 + 0.242194 * (year - 2000)) - Math.floor((year - 2000) / 4);
+      if (m === 9 && d === autumnalEquinox) return true;
+
+      // ハッピーマンデー（第X月曜日）
+      // 成人の日: 1月第2月曜, 海の日: 7月第3月曜, 敬老の日: 9月第3月曜, スポーツの日: 10月第2月曜
+      const nthDayOfWeek = Math.floor((d - 1) / 7) + 1;
+      if (dayOfWeek === 1) {
+        if (m === 1 && nthDayOfWeek === 2) return true;
+        if (m === 7 && nthDayOfWeek === 3) return true;
+        if (m === 9 && nthDayOfWeek === 3) return true;
+        if (m === 10 && nthDayOfWeek === 2) return true;
+      }
+
+      return false;
+    }
+
+    // ★ 平日か休日かを完全に判定（土日・祝日なら true = 土休日ダイヤ） ★
+    function isWeekendOrHoliday(date) {
+      const day = date.getDay();
+      if (day === 0 || day === 6) return true;
+      if (isJapaneseHoliday(date)) return true;
+
+      // 「国民の休日」：前日と翌日が祝日の平日
+      const prev = new Date(date); prev.setDate(prev.getDate() - 1);
+      const next = new Date(date); next.setDate(next.getDate() + 1);
+      if (isJapaneseHoliday(prev) && isJapaneseHoliday(next)) return true;
+
+      // 振替休日：直前まで連続する祝日の中に日曜日があれば休日
+      const cursor = new Date(date);
+      for (let i = 0; i < 7; i++) {
+        cursor.setDate(cursor.getDate() - 1);
+        if (!isJapaneseHoliday(cursor)) break;
+        if (cursor.getDay() === 0) return true;
+      }
+      return false;
+    }
+
+    function getTodayDatasets() {
+      const now = new Date();
+      const isHoliday = isWeekendOrHoliday(now);
+      return {
+        upTrains: isHoliday ? holidayKukiTrains : weekdayKukiTrains,
+        connections: isHoliday ? holidayConnections : weekdayConnections
+      };
+    }
+
+    function timeToMinutes(timeStr) {
+      if (!timeStr || timeStr === "---") return 9999;
+      const [h, m] = timeStr.split(":").map(Number);
+      let mins = h * 60 + m;
+      if (h < 4) mins += 1440;
+      return mins;
+    }
+
+    function updateMonitor() {
+      adjustScale();
+      updateClock();
+
+      const now = new Date();
+      let nowH = now.getHours();
+      let nowM = now.getMinutes();
+      let currentMin = nowH * 60 + nowM;
+      if (nowH < 4) currentMin += 1440;
+      const currentSec = now.getSeconds();
+
+      const { upTrains, connections } = getTodayDatasets();
+
+      const lastTrainMin = Math.max(...upTrains.map(r => timeToMinutes(r.time)));
+      const switchMin = lastTrainMin + 10;
+
+      let upcomingUp = [];
+      let isNextDayTrain = false;
+
+      if (currentMin > switchMin) {
+        upcomingUp = upTrains.slice(0, 3);
+        isNextDayTrain = true;
+      } else {
+        upcomingUp = upTrains.filter(r => {
+          const trainMin = timeToMinutes(r.time);
+          return trainMin > currentMin || (trainMin === currentMin && currentSec === 0);
+        });
+      }
+
+      const boardContainer = document.getElementById("main-board");
+
+      if (isDelayedStatus) {
+        updateNoticeDisplay(`【⚠️遅延発生】${realtimeDelayMessage}`, true);
+        boardContainer.classList.add("is-delayed");
+      } else {
+        boardContainer.classList.remove("is-delayed");
+
+        if (upcomingUp.length === 0) {
+          const endText = isEnglish ? "【Notice】 End of today's train service." : "【案内】本日の電車は終了いたしました。";
+          updateNoticeDisplay(endText, false);
+        } else {
+          const okText = isEnglish ? "【Status】 Tobu Line: Normal Operation" : "【運行状況】東武線：平常運転";
+          updateNoticeDisplay(okText, false);
+        }
+      }
+
+      if (upcomingUp.length === 0) {
+        setRowDataFinished("m1", isEnglish); 
+        setRowDataFinished("m2", isEnglish); 
+        setRowDataFinished("m3", isEnglish);
+      } else {
+        setRowData("m1", upcomingUp[0], isEnglish);
+        setRowData("m2", upcomingUp[1], isEnglish);
+        setRowData("m3", upcomingUp[2], isEnglish);
+
+        const nextTrain = upcomingUp[0];
+        let trainMin = timeToMinutes(nextTrain.time);
+        if (isNextDayTrain && trainMin < currentMin) trainMin += 1440;
+        const diffSec = (trainMin * 60) - (currentMin * 60 + currentSec);
+
+        if (diffSec === 10 && lastChimeTime !== nextTrain.time) {
+          playChime();
+          lastChimeTime = nextTrain.time;
+        }
+      }
+
+      if (upcomingUp.length > 0) {
+        const nextTrain = upcomingUp[0];
+        let trainMin = timeToMinutes(nextTrain.time);
+        if (isNextDayTrain && trainMin < currentMin) trainMin += 1440;
+        const seconds = Math.max(0, trainMin * 60 - (currentMin * 60 + currentSec));
+        updateStopGuide(nextTrain, seconds);
+      } else {
+        updateStopGuide(null, 0);
+      }
+    }
+
+    const stationNamesEn = {
+      "東武動物公園": "Tobu-dobutsu-koen", "和戸": "Wado", "久喜": "Kuki",
+      "鷲宮": "Washinomiya", "花崎": "Hanasaki", "加須": "Kazo",
+      "南羽生": "Minami-hanyu", "羽生": "Hanyu", "川俣": "Kawamata",
+      "茂林寺前": "Morinjimae", "館林": "Tatebayashi", "多々良": "Tatara",
+      "県": "Agata", "福居": "Fukui", "東武和泉": "Tobu-izumi",
+      "足利市": "Ashikagashi", "野州山辺": "Yashu-yamabe", "韮川": "Niragawa",
+      "太田": "Ota", "細谷": "Hosoya", "木崎": "Kizaki", "世良田": "Serada",
+      "境町": "Sakaimachi", "剛志": "Goshi", "新伊勢崎": "Shin-isesaki",
+      "伊勢崎": "Isesaki", "三枚橋": "Sammaibashi", "治良門橋": "Jiroembashi",
+      "藪塚": "Yabuzuka", "阿左美": "Azami", "新桐生": "Shin-kiryu",
+      "相老": "Aioi", "赤城": "Akagi", "渡瀬": "Watarase", "田島": "Tajima",
+      "佐野市": "Sanoshi", "佐野": "Sano", "堀米": "Horigome",
+      "吉水": "Yoshimizu", "田沼": "Tanuma", "多田": "Tada",
+      "葛生": "Kuzuu"
+    };
+
+    const localRoutes = {
+      "久喜": ["東武動物公園", "和戸", "久喜"],
+      "館林": ["東武動物公園", "和戸", "久喜", "鷲宮", "花崎", "加須", "南羽生", "羽生", "川俣", "茂林寺前", "館林"],
+      "太田": ["東武動物公園", "和戸", "久喜", "鷲宮", "花崎", "加須", "南羽生", "羽生", "川俣", "茂林寺前", "館林", "多々良", "県", "福居", "東武和泉", "足利市", "野州山辺", "韮川", "太田"]
+    };
+
+    const limitedRoutes = {
+      "館林": ["東武動物公園", "久喜", "加須", "羽生", "館林"],
+      "太田": ["東武動物公園", "久喜", "加須", "羽生", "館林", "足利市", "太田"],
+      "赤城": ["東武動物公園", "久喜", "加須", "羽生", "館林", "足利市", "太田", "藪塚", "新桐生", "相老", "赤城"],
+      "伊勢崎": ["東武動物公園", "久喜", "加須", "羽生", "館林", "足利市", "太田", "木崎", "境町", "新伊勢崎", "伊勢崎"],
+      "葛生": ["東武動物公園", "久喜", "加須", "羽生", "館林", "佐野市", "佐野", "田沼", "葛生"]
+    };
+
+    function stationsFor(train) {
+      if (train.typeJa === "特急") return limitedRoutes[train.destJa] || ["東武動物公園", train.destJa];
+      return localRoutes[train.destJa] || ["東武動物公園", "和戸", "久喜"];
+    }
+
+    function updateStopGuide(train, seconds) {
+      const countdown = document.getElementById("info-countdown");
+      const service = document.getElementById("stop-service-name");
+      const destination = document.getElementById("stop-destination");
+      const list = document.getElementById("stop-list");
+      if (!train) {
+        countdown.textContent = isEnglish ? "Finished" : "本日終了";
+        service.textContent = "--";
+        destination.textContent = "--";
+        list.textContent = isEnglish ? "Today's service has ended." : "本日の運転は終了しました";
+        return;
+      }
+      const min = Math.floor(seconds / 60);
+      const sec = seconds % 60;
+      countdown.textContent = `${isEnglish ? "In " : "あと "}${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+      service.textContent = isEnglish
+        ? (train.serviceNameEn || train.typeEn)
+        : (train.serviceNameJa || train.typeJa);
+      destination.textContent = isEnglish ? `for ${train.destEn}` : `${train.destJa}行`;
+      const stations = stationsFor(train);
+      list.textContent = stations.map((name) => isEnglish ? (stationNamesEn[name] || name) : name).join("  →  ");
+      list.classList.toggle("compact", stations.length > 8);
+    }
+
+    function setRowData(prefix, data, isEn) {
+      if (data) {
+        document.getElementById(`${prefix}-time`).textContent = data.time;
+        
+        const destName = isEn ? data.destEn : data.destJa;
+        let destHTML = `<span class="dest-text">${destName}</span>`;
+        
+        if (data.isFirst) {
+          const firstTagText = isEn ? "First" : "始発";
+          destHTML += `<span class="first-train-badge">${firstTagText}</span>`;
+        } else {
+          destHTML += `<span style="width: 58px; display: inline-block;"></span>`;
+        }
+        document.getElementById(`${prefix}-dest`).innerHTML = destHTML;
+
+        document.getElementById(`${prefix}-cars`).innerHTML = `${data.cars}<span class="cars-unit">${isEn ? 'Cars' : '両'}</span>`;
+        const typeLabel = isEn
+          ? (data.serviceNameEn || data.typeEn)
+          : (data.serviceNameJa || data.typeJa);
+        document.getElementById(`${prefix}-badge`).textContent = typeLabel;
+        document.getElementById(`${prefix}-badge`).className =
+          `train-badge ${data.badge}${typeLabel.length > 10 ? " long-label" : ""}`;
+      } else {
+        setRowDataFinished(prefix, isEn);
+      }
+    }
+
+    function setRowDataFinished(prefix, isEn) {
+      document.getElementById(`${prefix}-time`).textContent = "--:--";
+      document.getElementById(`${prefix}-dest`).textContent = isEn ? "End of today's service" : "本日の運転は終了いたしました";
+      document.getElementById(`${prefix}-cars`).innerHTML = `--<span class="cars-unit">${isEn ? 'Cars' : '両'}</span>`;
+      document.getElementById(`${prefix}-badge`).textContent = isEn ? "End" : "終了";
+      document.getElementById(`${prefix}-badge`).className = "train-badge badge-end";
+    }
+
+    const weekdayUpTrains = [{"time":"05:09","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":false},{"time":"05:19","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"05:29","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"05:35","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"05:37","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"05:46","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"05:50","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":false},{"time":"05:54","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"06:00","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"06:04","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"06:07","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":false},{"time":"06:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"06:19","typeJa":"ライナー","typeEn":"TH Liner","badge":"badge-ltd","destJa":"恵比寿","destEn":"Ebisu","cars":"7","isFirst":false},{"time":"06:22","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"06:26","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"06:31","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"06:36","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"06:38","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"06:44","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"06:46","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":false},{"time":"06:55","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"06:57","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"06:59","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":false},{"time":"07:02","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":false},{"time":"07:05","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"07:07","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"07:09","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"07:11","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":false},{"time":"07:15","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"07:16","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"07:21","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":true},{"time":"07:24","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"07:26","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"07:29","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"07:32","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":false},{"time":"07:36","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"07:40","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"07:43","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"07:45","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":true},{"time":"07:49","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"07:54","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"07:57","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":false},{"time":"08:03","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"08:07","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":true},{"time":"08:10","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"08:14","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"08:18","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"08:21","typeJa":"ライナー","typeEn":"TH Liner","badge":"badge-ltd","destJa":"恵比寿","destEn":"Ebisu","cars":"7","isFirst":false},{"time":"08:23","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":false},{"time":"08:26","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"08:33","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":false},{"time":"08:36","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"08:42","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"08:45","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"08:52","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":true},{"time":"08:57","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"09:02","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"09:06","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"09:13","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"北千住","destEn":"Kita-senju","cars":"6","isFirst":true},{"time":"09:15","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":true},{"time":"09:20","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"09:25","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"09:28","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"09:37","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"09:43","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":true},{"time":"09:46","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"09:49","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":false},{"time":"09:54","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":false},{"time":"10:00","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":true},{"time":"10:03","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"10:11","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"10:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"10:20","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"10:25","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"10:39","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"10:47","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"10:53","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"10:57","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"11:03","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"11:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"11:13","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"11:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"11:24","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"11:26","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"11:32","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"11:41","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"11:43","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"11:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"11:57","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"12:01","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"12:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"12:13","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"12:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"12:21","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"12:27","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"12:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"12:41","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"12:43","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"12:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"12:57","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"13:01","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"13:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"13:13","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"13:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"13:21","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"13:27","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"13:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"13:41","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"13:43","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"13:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"13:57","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"14:01","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"14:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"14:13","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"14:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"14:21","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"14:27","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"14:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":false},{"time":"14:41","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"14:43","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"14:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"14:58","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"15:03","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"15:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"15:13","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"15:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"15:21","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"15:27","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"15:32","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"15:41","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"15:43","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"15:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"15:58","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"16:02","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"16:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"16:13","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"16:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"16:21","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"16:26","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":false},{"time":"16:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"16:41","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"16:43","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"16:46","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"16:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"16:57","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"17:00","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"17:02","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":false},{"time":"17:13","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"17:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"17:18","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"17:23","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"17:27","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"17:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"17:40","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"17:43","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"17:46","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"17:48","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"17:54","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"18:00","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"18:04","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"18:11","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":true},{"time":"18:13","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":false},{"time":"18:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"18:22","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"18:25","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"18:32","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"18:41","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"18:43","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":true},{"time":"18:46","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"18:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"18:58","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":true},{"time":"19:04","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"19:06","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"19:12","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"19:14","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":false},{"time":"19:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"19:25","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"19:28","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":true},{"time":"19:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"19:39","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":true},{"time":"19:42","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"19:46","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"19:54","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"19:58","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":false},{"time":"20:04","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"20:07","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":true},{"time":"20:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"20:13","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"20:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"20:22","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"20:26","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"20:30","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"20:35","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"20:41","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"20:46","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"20:50","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"20:53","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":false},{"time":"21:00","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"21:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"21:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"21:19","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"21:31","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"21:42","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"21:45","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":true},{"time":"21:52","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":false},{"time":"21:58","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":false},{"time":"22:08","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":false},{"time":"22:21","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":false},{"time":"22:34","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":false},{"time":"22:47","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"22:56","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"北千住","destEn":"Kita-senju","cars":"10","isFirst":false},{"time":"23:11","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"23:12","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"押上","destEn":"Oshiage","cars":"10","isFirst":false},{"time":"23:29","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"北千住","destEn":"Kita-senju","cars":"6","isFirst":false}];
+
+    const holidayUpTrains = [{"time":"05:09","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"05:19","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"05:29","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"05:35","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"05:37","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"05:46","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"05:49","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"05:54","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"06:01","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"06:04","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"06:10","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"06:12","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"06:21","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"06:26","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"06:31","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"06:36","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"06:38","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"06:45","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"06:53","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"06:57","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"06:59","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"07:05","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"07:07","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":false},{"time":"07:10","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"07:15","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"07:18","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"07:21","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":true},{"time":"07:24","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"07:29","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"07:32","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":false},{"time":"07:36","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"07:38","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"07:43","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"07:48","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":true},{"time":"07:53","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"07:59","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":false},{"time":"08:03","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"08:08","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":true},{"time":"08:11","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"08:14","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"08:17","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":false},{"time":"08:20","typeJa":"ライナー","typeEn":"TH Liner","badge":"badge-ltd","destJa":"恵比寿","destEn":"Ebisu","cars":"7","isFirst":false},{"time":"08:25","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"08:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"08:33","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":true},{"time":"08:37","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"08:42","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"08:46","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"08:52","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":true},{"time":"08:57","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"09:02","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":false},{"time":"09:06","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"09:14","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"09:16","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"09:25","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"09:28","typeJa":"ライナー","typeEn":"TH Liner","badge":"badge-ltd","destJa":"恵比寿","destEn":"Ebisu","cars":"7","isFirst":false},{"time":"09:30","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"09:36","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"09:42","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"09:46","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"09:48","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"09:52","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"09:59","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"10:03","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"10:13","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"10:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"10:24","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"10:26","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"10:39","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"10:44","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"10:47","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"10:53","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"10:55","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"10:57","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"11:03","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"11:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"11:13","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"11:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"11:24","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"11:26","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"11:32","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"11:41","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"11:43","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"11:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"11:57","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"12:01","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"12:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"12:13","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"12:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"12:21","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"12:27","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"12:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"12:41","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"12:43","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"12:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"12:57","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"13:01","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"13:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"13:13","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"13:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"13:21","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"13:27","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"13:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"13:41","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"13:43","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"13:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"13:57","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"14:01","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"14:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"14:13","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"14:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"14:21","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"14:27","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"14:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"14:41","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"14:43","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"14:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"14:58","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"15:03","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"15:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"15:13","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"15:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"15:21","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"15:27","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"15:32","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"15:41","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"15:43","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"15:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"15:58","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"16:02","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":false},{"time":"16:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"16:13","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"16:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"16:21","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"16:26","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":false},{"time":"16:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"16:41","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"16:43","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"16:46","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"16:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"16:57","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"17:00","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"17:02","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":false},{"time":"17:12","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"17:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"17:18","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"17:23","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"17:28","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"17:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"17:39","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"17:43","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"17:46","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"17:49","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"17:54","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"18:01","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"18:04","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"18:10","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":true},{"time":"18:13","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"18:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"18:22","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"18:25","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"18:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"18:33","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"18:41","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"18:43","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":true},{"time":"18:46","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"18:52","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"18:57","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":true},{"time":"19:03","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"19:07","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"19:09","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"19:12","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"19:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"19:20","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":true},{"time":"19:25","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"19:27","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"19:33","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"19:40","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":true},{"time":"19:43","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"19:46","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"19:54","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"19:56","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"20:04","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"20:07","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":true},{"time":"20:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"20:13","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":false},{"time":"20:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"20:22","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"20:27","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":true},{"time":"20:33","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"20:37","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":false},{"time":"20:46","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"20:50","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"20:53","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"21:06","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"21:13","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"21:16","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"21:21","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":false},{"time":"21:28","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"21:38","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"21:46","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"21:55","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"21:58","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"22:09","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":true},{"time":"22:21","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"中央林間","destEn":"Chuo-rinkan","cars":"10","isFirst":false},{"time":"22:34","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"長津田","destEn":"Nagatsuta","cars":"10","isFirst":false},{"time":"22:47","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"22:56","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"中目黒","destEn":"Naka-meguro","cars":"7","isFirst":false},{"time":"23:11","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"浅草","destEn":"Asakusa","cars":"6","isFirst":false},{"time":"23:13","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"南栗橋","destEn":"Minami-kurihashi","cars":"7","isFirst":false},{"time":"23:29","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"北千住","destEn":"Kita-senju","cars":"6","isFirst":false}];
+
+    const weekdayConnections = [{"tobuDep":"05:12","tobuType":"普通","tobuDest":"館林","kukiArr":"05:19","jrDep":"05:33","transferMin":"14","jrType":"普通","jrDest":"熱海","shiraokaArr":"05:38"},{"tobuDep":"05:43","tobuType":"普通","tobuDest":"館林","kukiArr":"05:50","jrDep":"06:00","transferMin":"10","jrType":"普通","jrDest":"上野","shiraokaArr":"06:06"},{"tobuDep":"06:05","tobuType":"区間急行","tobuDest":"館林","kukiArr":"06:12","jrDep":"06:19","transferMin":"7","jrType":"普通","jrDest":"大船","shiraokaArr":"06:25"},{"tobuDep":"06:20","tobuType":"区間急行","tobuDest":"館林","kukiArr":"06:27","jrDep":"06:38","transferMin":"11","jrType":"普通","jrDest":"上野","shiraokaArr":"06:44"},{"tobuDep":"06:33","tobuType":"急行","tobuDest":"久喜","kukiArr":"06:39","jrDep":"06:44","transferMin":"5","jrType":"普通","jrDest":"熱海","shiraokaArr":"06:50"},{"tobuDep":"06:37","tobuType":"普通","tobuDest":"館林","kukiArr":"06:44","jrDep":"06:49","transferMin":"5","jrType":"普通","jrDest":"大船","shiraokaArr":"06:55"},{"tobuDep":"06:57","tobuType":"普通","tobuDest":"館林","kukiArr":"07:04","jrDep":"07:10","transferMin":"6","jrType":"普通","jrDest":"平塚","shiraokaArr":"07:16"},{"tobuDep":"07:13","tobuType":"普通","tobuDest":"館林","kukiArr":"07:20","jrDep":"07:28","transferMin":"8","jrType":"普通","jrDest":"国府津","shiraokaArr":"07:34"},{"tobuDep":"07:29","tobuType":"特急","tobuDest":"赤城","kukiArr":"07:35","jrDep":"07:39","transferMin":"4","jrType":"普通","jrDest":"品川","shiraokaArr":"07:46"},{"tobuDep":"07:34","tobuType":"普通","tobuDest":"館林","kukiArr":"07:41","jrDep":"07:45","transferMin":"4","jrType":"普通","jrDest":"逗子","shiraokaArr":"07:52"},{"tobuDep":"07:43","tobuType":"区間急行","tobuDest":"館林","kukiArr":"07:50","jrDep":"07:57","transferMin":"7","jrType":"普通","jrDest":"品川","shiraokaArr":"08:03"},{"tobuDep":"07:56","tobuType":"区間急行","tobuDest":"館林","kukiArr":"08:03","jrDep":"08:06","transferMin":"3","jrType":"普通","jrDest":"熱海","shiraokaArr":"08:12"},{"tobuDep":"08:04","tobuType":"区間急行","tobuDest":"館林","kukiArr":"08:11","jrDep":"08:16","transferMin":"5","jrType":"普通","jrDest":"熱海","shiraokaArr":"08:22"},{"tobuDep":"08:20","tobuType":"特急","tobuDest":"赤城","kukiArr":"08:26","jrDep":"08:33","transferMin":"7","jrType":"普通","jrDest":"熱海","shiraokaArr":"08:39"},{"tobuDep":"08:23","tobuType":"区間準急","tobuDest":"館林","kukiArr":"08:30","jrDep":"08:33","transferMin":"3","jrType":"普通","jrDest":"熱海","shiraokaArr":"08:39"},{"tobuDep":"08:41","tobuType":"急行","tobuDest":"久喜","kukiArr":"08:47","jrDep":"08:55","transferMin":"8","jrType":"普通","jrDest":"逗子","shiraokaArr":"09:01"},{"tobuDep":"08:44","tobuType":"区間準急","tobuDest":"館林","kukiArr":"08:51","jrDep":"08:55","transferMin":"4","jrType":"普通","jrDest":"逗子","shiraokaArr":"09:01"},{"tobuDep":"09:04","tobuType":"区間準急","tobuDest":"館林","kukiArr":"09:11","jrDep":"09:14","transferMin":"3","jrType":"普通","jrDest":"上野","shiraokaArr":"09:20"},{"tobuDep":"09:20","tobuType":"特急","tobuDest":"赤城","kukiArr":"09:26","jrDep":"09:33","transferMin":"7","jrType":"普通","jrDest":"熱海","shiraokaArr":"09:39"},{"tobuDep":"09:23","tobuType":"準急","tobuDest":"久喜","kukiArr":"09:30","jrDep":"09:33","transferMin":"3","jrType":"普通","jrDest":"熱海","shiraokaArr":"09:39"},{"tobuDep":"09:31","tobuType":"区間準急","tobuDest":"館林","kukiArr":"09:38","jrDep":"09:49","transferMin":"11","jrType":"普通","jrDest":"逗子","shiraokaArr":"09:55"},{"tobuDep":"09:43","tobuType":"準急","tobuDest":"久喜","kukiArr":"09:50","jrDep":"10:04","transferMin":"14","jrType":"普通","jrDest":"平塚","shiraokaArr":"10:09"},{"tobuDep":"10:07","tobuType":"準急","tobuDest":"久喜","kukiArr":"10:14","jrDep":"10:18","transferMin":"4","jrType":"普通","jrDest":"平塚","shiraokaArr":"10:23"},{"tobuDep":"10:20","tobuType":"特急","tobuDest":"赤城","kukiArr":"10:26","jrDep":"10:37","transferMin":"11","jrType":"普通","jrDest":"熱海","shiraokaArr":"10:43"},{"tobuDep":"10:26","tobuType":"区間準急","tobuDest":"館林","kukiArr":"10:33","jrDep":"10:37","transferMin":"4","jrType":"普通","jrDest":"熱海","shiraokaArr":"10:43"},{"tobuDep":"10:31","tobuType":"急行","tobuDest":"久喜","kukiArr":"10:37","jrDep":"10:52","transferMin":"15","jrType":"普通","jrDest":"逗子","shiraokaArr":"10:58"},{"tobuDep":"10:49","tobuType":"急行","tobuDest":"久喜","kukiArr":"10:55","jrDep":"11:01","transferMin":"6","jrType":"普通","jrDest":"平塚","shiraokaArr":"11:07"},{"tobuDep":"10:59","tobuType":"特急","tobuDest":"太田","kukiArr":"11:05","jrDep":"11:17","transferMin":"12","jrType":"普通","jrDest":"平塚","shiraokaArr":"11:23"},{"tobuDep":"11:11","tobuType":"急行","tobuDest":"久喜","kukiArr":"11:17","jrDep":"11:41","transferMin":"24","jrType":"普通","jrDest":"熱海","shiraokaArr":"11:47"},{"tobuDep":"11:29","tobuType":"特急","tobuDest":"赤城","kukiArr":"11:35","jrDep":"11:41","transferMin":"6","jrType":"普通","jrDest":"熱海","shiraokaArr":"11:47"},{"tobuDep":"11:32","tobuType":"急行","tobuDest":"久喜","kukiArr":"11:38","jrDep":"11:41","transferMin":"3","jrType":"普通","jrDest":"熱海","shiraokaArr":"11:47"},{"tobuDep":"11:51","tobuType":"急行","tobuDest":"久喜","kukiArr":"11:57","jrDep":"12:16","transferMin":"19","jrType":"普通","jrDest":"平塚","shiraokaArr":"12:22"},{"tobuDep":"12:11","tobuType":"急行","tobuDest":"久喜","kukiArr":"12:17","jrDep":"12:36","transferMin":"19","jrType":"普通","jrDest":"熱海","shiraokaArr":"12:42"},{"tobuDep":"12:29","tobuType":"特急","tobuDest":"赤城","kukiArr":"12:35","jrDep":"12:51","transferMin":"16","jrType":"普通","jrDest":"逗子","shiraokaArr":"12:57"},{"tobuDep":"12:31","tobuType":"急行","tobuDest":"久喜","kukiArr":"12:37","jrDep":"12:51","transferMin":"14","jrType":"普通","jrDest":"逗子","shiraokaArr":"12:57"},{"tobuDep":"12:51","tobuType":"急行","tobuDest":"久喜","kukiArr":"12:57","jrDep":"13:02","transferMin":"5","jrType":"普通","jrDest":"平塚","shiraokaArr":"13:07"},{"tobuDep":"13:11","tobuType":"急行","tobuDest":"久喜","kukiArr":"13:17","jrDep":"13:37","transferMin":"20","jrType":"普通","jrDest":"熱海","shiraokaArr":"13:43"},{"tobuDep":"13:29","tobuType":"特急","tobuDest":"赤城","kukiArr":"13:35","jrDep":"13:51","transferMin":"16","jrType":"普通","jrDest":"逗子","shiraokaArr":"13:57"},{"tobuDep":"13:31","tobuType":"急行","tobuDest":"久喜","kukiArr":"13:37","jrDep":"13:51","transferMin":"14","jrType":"普通","jrDest":"逗子","shiraokaArr":"13:57"},{"tobuDep":"13:51","tobuType":"急行","tobuDest":"久喜","kukiArr":"13:57","jrDep":"14:02","transferMin":"5","jrType":"普通","jrDest":"平塚","shiraokaArr":"14:07"},{"tobuDep":"14:11","tobuType":"急行","tobuDest":"久喜","kukiArr":"14:17","jrDep":"14:33","transferMin":"16","jrType":"普通","jrDest":"小田原","shiraokaArr":"14:39"},{"tobuDep":"14:29","tobuType":"特急","tobuDest":"赤城","kukiArr":"14:35","jrDep":"14:51","transferMin":"16","jrType":"普通","jrDest":"逗子","shiraokaArr":"14:56"},{"tobuDep":"14:31","tobuType":"急行","tobuDest":"久喜","kukiArr":"14:37","jrDep":"14:51","transferMin":"14","jrType":"普通","jrDest":"逗子","shiraokaArr":"14:56"},{"tobuDep":"14:51","tobuType":"急行","tobuDest":"久喜","kukiArr":"14:57","jrDep":"15:01","transferMin":"4","jrType":"普通","jrDest":"小田原","shiraokaArr":"15:06"},{"tobuDep":"15:11","tobuType":"急行","tobuDest":"久喜","kukiArr":"15:17","jrDep":"15:37","transferMin":"20","jrType":"普通","jrDest":"小田原","shiraokaArr":"15:43"},{"tobuDep":"15:29","tobuType":"特急","tobuDest":"赤城","kukiArr":"15:35","jrDep":"15:51","transferMin":"16","jrType":"普通","jrDest":"逗子","shiraokaArr":"15:57"},{"tobuDep":"15:31","tobuType":"急行","tobuDest":"久喜","kukiArr":"15:37","jrDep":"15:51","transferMin":"14","jrType":"普通","jrDest":"逗子","shiraokaArr":"15:57"},{"tobuDep":"15:43","tobuType":"急行","tobuDest":"久喜","kukiArr":"15:49","jrDep":"16:04","transferMin":"15","jrType":"普通","jrDest":"小田原","shiraokaArr":"16:10"},{"tobuDep":"15:59","tobuType":"特急","tobuDest":"太田","kukiArr":"16:05","jrDep":"16:17","transferMin":"12","jrType":"普通","jrDest":"小田原","shiraokaArr":"16:23"},{"tobuDep":"16:01","tobuType":"急行","tobuDest":"久喜","kukiArr":"16:07","jrDep":"16:17","transferMin":"10","jrType":"普通","jrDest":"小田原","shiraokaArr":"16:23"},{"tobuDep":"16:20","tobuType":"急行","tobuDest":"久喜","kukiArr":"16:26","jrDep":"16:35","transferMin":"9","jrType":"普通","jrDest":"上野","shiraokaArr":"16:41"},{"tobuDep":"16:28","tobuType":"特急","tobuDest":"赤城","kukiArr":"16:34","jrDep":"16:46","transferMin":"12","jrType":"普通","jrDest":"熱海","shiraokaArr":"16:52"},{"tobuDep":"16:41","tobuType":"急行","tobuDest":"久喜","kukiArr":"16:47","jrDep":"16:51","transferMin":"4","jrType":"普通","jrDest":"逗子","shiraokaArr":"16:57"},{"tobuDep":"16:58","tobuType":"特急","tobuDest":"太田","kukiArr":"17:04","jrDep":"17:07","transferMin":"3","jrType":"普通","jrDest":"国府津","shiraokaArr":"17:12"},{"tobuDep":"17:03","tobuType":"急行","tobuDest":"久喜","kukiArr":"17:09","jrDep":"17:17","transferMin":"8","jrType":"普通","jrDest":"上野","shiraokaArr":"17:22"},{"tobuDep":"17:22","tobuType":"急行","tobuDest":"久喜","kukiArr":"17:28","jrDep":"17:33","transferMin":"5","jrType":"普通","jrDest":"国府津","shiraokaArr":"17:39"},{"tobuDep":"17:29","tobuType":"特急","tobuDest":"赤城","kukiArr":"17:35","jrDep":"17:46","transferMin":"11","jrType":"普通","jrDest":"熱海","shiraokaArr":"17:52"},{"tobuDep":"17:42","tobuType":"急行","tobuDest":"久喜","kukiArr":"17:48","jrDep":"17:58","transferMin":"10","jrType":"普通","jrDest":"逗子","shiraokaArr":"18:03"},{"tobuDep":"17:50","tobuType":"特急","tobuDest":"太田","kukiArr":"17:56","jrDep":"18:11","transferMin":"15","jrType":"普通","jrDest":"熱海","shiraokaArr":"18:17"},{"tobuDep":"18:04","tobuType":"急行","tobuDest":"久喜","kukiArr":"18:10","jrDep":"18:23","transferMin":"13","jrType":"普通","jrDest":"平塚","shiraokaArr":"18:28"},{"tobuDep":"18:10","tobuType":"区間準急","tobuDest":"館林","kukiArr":"18:17","jrDep":"18:23","transferMin":"6","jrType":"普通","jrDest":"平塚","shiraokaArr":"18:28"},{"tobuDep":"18:20","tobuType":"特急","tobuDest":"赤城","kukiArr":"18:26","jrDep":"18:29","transferMin":"3","jrType":"普通","jrDest":"大船","shiraokaArr":"18:35"},{"tobuDep":"18:23","tobuType":"急行","tobuDest":"久喜","kukiArr":"18:29","jrDep":"18:39","transferMin":"10","jrType":"普通","jrDest":"小田原","shiraokaArr":"18:46"},{"tobuDep":"18:36","tobuType":"区間準急","tobuDest":"館林","kukiArr":"18:43","jrDep":"18:53","transferMin":"10","jrType":"普通","jrDest":"小田原","shiraokaArr":"18:59"},{"tobuDep":"18:43","tobuType":"急行","tobuDest":"久喜","kukiArr":"18:49","jrDep":"18:53","transferMin":"4","jrType":"普通","jrDest":"小田原","shiraokaArr":"18:59"},{"tobuDep":"18:50","tobuType":"特急","tobuDest":"太田","kukiArr":"18:56","jrDep":"19:02","transferMin":"6","jrType":"普通","jrDest":"逗子","shiraokaArr":"19:08"},{"tobuDep":"18:53","tobuType":"区間急行","tobuDest":"館林","kukiArr":"19:00","jrDep":"19:13","transferMin":"13","jrType":"普通","jrDest":"小田原","shiraokaArr":"19:19"},{"tobuDep":"19:04","tobuType":"急行","tobuDest":"久喜","kukiArr":"19:10","jrDep":"19:13","transferMin":"3","jrType":"普通","jrDest":"小田原","shiraokaArr":"19:19"},{"tobuDep":"19:20","tobuType":"特急","tobuDest":"赤城","kukiArr":"19:26","jrDep":"19:37","transferMin":"11","jrType":"普通","jrDest":"平塚","shiraokaArr":"19:43"},{"tobuDep":"19:23","tobuType":"急行","tobuDest":"久喜","kukiArr":"19:29","jrDep":"19:37","transferMin":"8","jrType":"普通","jrDest":"平塚","shiraokaArr":"19:43"},{"tobuDep":"19:35","tobuType":"区間準急","tobuDest":"館林","kukiArr":"19:42","jrDep":"19:50","transferMin":"8","jrType":"普通","jrDest":"大船","shiraokaArr":"19:56"},{"tobuDep":"19:43","tobuType":"急行","tobuDest":"久喜","kukiArr":"19:49","jrDep":"19:59","transferMin":"10","jrType":"普通","jrDest":"小田原","shiraokaArr":"20:04"},{"tobuDep":"19:50","tobuType":"特急","tobuDest":"赤城","kukiArr":"19:56","jrDep":"19:59","transferMin":"3","jrType":"普通","jrDest":"小田原","shiraokaArr":"20:04"},{"tobuDep":"19:53","tobuType":"区間急行","tobuDest":"館林","kukiArr":"20:00","jrDep":"20:03","transferMin":"3","jrType":"普通","jrDest":"上野","shiraokaArr":"20:08"},{"tobuDep":"20:05","tobuType":"急行","tobuDest":"久喜","kukiArr":"20:11","jrDep":"20:14","transferMin":"3","jrType":"普通","jrDest":"平塚","shiraokaArr":"20:19"},{"tobuDep":"20:20","tobuType":"特急","tobuDest":"伊勢崎","kukiArr":"20:26","jrDep":"20:37","transferMin":"11","jrType":"普通","jrDest":"小田原","shiraokaArr":"20:43"},{"tobuDep":"20:24","tobuType":"急行","tobuDest":"久喜","kukiArr":"20:30","jrDep":"20:37","transferMin":"7","jrType":"普通","jrDest":"小田原","shiraokaArr":"20:43"},{"tobuDep":"20:34","tobuType":"区間準急","tobuDest":"久喜","kukiArr":"20:41","jrDep":"20:48","transferMin":"7","jrType":"普通","jrDest":"逗子","shiraokaArr":"20:54"},{"tobuDep":"20:43","tobuType":"急行","tobuDest":"久喜","kukiArr":"20:49","jrDep":"20:56","transferMin":"7","jrType":"普通","jrDest":"熱海","shiraokaArr":"21:02"},{"tobuDep":"20:50","tobuType":"特急","tobuDest":"赤城","kukiArr":"20:56","jrDep":"21:10","transferMin":"14","jrType":"普通","jrDest":"上野","shiraokaArr":"21:16"},{"tobuDep":"20:53","tobuType":"区間急行","tobuDest":"館林","kukiArr":"21:00","jrDep":"21:10","transferMin":"10","jrType":"普通","jrDest":"上野","shiraokaArr":"21:16"},{"tobuDep":"21:08","tobuType":"準急","tobuDest":"久喜","kukiArr":"21:15","jrDep":"21:21","transferMin":"6","jrType":"普通","jrDest":"上野","shiraokaArr":"21:27"},{"tobuDep":"21:20","tobuType":"特急","tobuDest":"葛生","kukiArr":"21:26","jrDep":"21:33","transferMin":"7","jrType":"普通","jrDest":"大船","shiraokaArr":"21:38"},{"tobuDep":"21:32","tobuType":"区間準急","tobuDest":"館林","kukiArr":"21:39","jrDep":"21:44","transferMin":"5","jrType":"普通","jrDest":"国府津","shiraokaArr":"21:50"},{"tobuDep":"21:44","tobuType":"急行","tobuDest":"久喜","kukiArr":"21:50","jrDep":"22:03","transferMin":"13","jrType":"普通","jrDest":"平塚","shiraokaArr":"22:08"},{"tobuDep":"21:50","tobuType":"特急","tobuDest":"赤城","kukiArr":"21:56","jrDep":"22:03","transferMin":"7","jrType":"普通","jrDest":"平塚","shiraokaArr":"22:08"},{"tobuDep":"21:59","tobuType":"区間準急","tobuDest":"館林","kukiArr":"22:06","jrDep":"22:12","transferMin":"6","jrType":"普通","jrDest":"上野","shiraokaArr":"22:18"},{"tobuDep":"22:05","tobuType":"急行","tobuDest":"久喜","kukiArr":"22:11","jrDep":"22:22","transferMin":"11","jrType":"普通","jrDest":"上野","shiraokaArr":"22:28"},{"tobuDep":"22:20","tobuType":"特急","tobuDest":"太田","kukiArr":"22:26","jrDep":"22:31","transferMin":"5","jrType":"普通","jrDest":"上野","shiraokaArr":"22:36"},{"tobuDep":"22:25","tobuType":"区間準急","tobuDest":"館林","kukiArr":"22:32","jrDep":"22:51","transferMin":"19","jrType":"普通","jrDest":"上野","shiraokaArr":"22:57"},{"tobuDep":"22:49","tobuType":"区間急行","tobuDest":"館林","kukiArr":"22:56","jrDep":"23:15","transferMin":"19","jrType":"普通","jrDest":"上野","shiraokaArr":"23:21"},{"tobuDep":"23:00","tobuType":"特急","tobuDest":"館林","kukiArr":"23:06","jrDep":"23:15","transferMin":"9","jrType":"普通","jrDest":"上野","shiraokaArr":"23:21"},{"tobuDep":"23:17","tobuType":"区間準急","tobuDest":"館林","kukiArr":"23:24","jrDep":"23:37","transferMin":"13","jrType":"普通","jrDest":"大宮","shiraokaArr":"23:42"},{"tobuDep":"23:37","tobuType":"区間急行","tobuDest":"館林","kukiArr":"23:44","jrDep":"---","transferMin":"","jrType":"","jrDest":"","shiraokaArr":"当日接続なし"},{"tobuDep":"23:55","tobuType":"区間急行","tobuDest":"館林","kukiArr":"00:02","jrDep":"---","transferMin":"","jrType":"","jrDest":"","shiraokaArr":"当日接続なし"},{"tobuDep":"24:11","tobuType":"急行","tobuDest":"久喜","kukiArr":"00:17","jrDep":"---","transferMin":"","jrType":"","jrDest":"","shiraokaArr":"当日接続なし"}];
+
+    const holidayConnections = [{"tobuDep":"05:12","tobuType":"普通","tobuDest":"館林","kukiArr":"05:19","jrDep":"05:33","transferMin":"14","jrType":"普通","jrDest":"熱海","shiraokaArr":"05:38"},{"tobuDep":"05:43","tobuType":"普通","tobuDest":"館林","kukiArr":"05:50","jrDep":"06:00","transferMin":"10","jrType":"普通","jrDest":"上野","shiraokaArr":"06:06"},{"tobuDep":"06:05","tobuType":"区間急行","tobuDest":"館林","kukiArr":"06:12","jrDep":"06:18","transferMin":"6","jrType":"普通","jrDest":"大船","shiraokaArr":"06:24"},{"tobuDep":"06:20","tobuType":"区間急行","tobuDest":"館林","kukiArr":"06:27","jrDep":"06:38","transferMin":"11","jrType":"普通","jrDest":"上野","shiraokaArr":"06:44"},{"tobuDep":"06:37","tobuType":"普通","tobuDest":"館林","kukiArr":"06:44","jrDep":"06:47","transferMin":"3","jrType":"普通","jrDest":"熱海","shiraokaArr":"06:53"},{"tobuDep":"06:57","tobuType":"普通","tobuDest":"館林","kukiArr":"07:04","jrDep":"07:08","transferMin":"4","jrType":"普通","jrDest":"小田原","shiraokaArr":"07:14"},{"tobuDep":"07:13","tobuType":"普通","tobuDest":"館林","kukiArr":"07:20","jrDep":"07:32","transferMin":"12","jrType":"普通","jrDest":"小田原","shiraokaArr":"07:38"},{"tobuDep":"07:29","tobuType":"特急","tobuDest":"赤城","kukiArr":"07:35","jrDep":"07:47","transferMin":"12","jrType":"普通","jrDest":"逗子","shiraokaArr":"07:53"},{"tobuDep":"07:34","tobuType":"普通","tobuDest":"館林","kukiArr":"07:41","jrDep":"07:47","transferMin":"6","jrType":"普通","jrDest":"逗子","shiraokaArr":"07:53"},{"tobuDep":"07:45","tobuType":"区間急行","tobuDest":"館林","kukiArr":"07:52","jrDep":"07:58","transferMin":"6","jrType":"普通","jrDest":"熱海","shiraokaArr":"08:04"},{"tobuDep":"07:56","tobuType":"区間急行","tobuDest":"館林","kukiArr":"08:03","jrDep":"08:07","transferMin":"4","jrType":"普通","jrDest":"小田原","shiraokaArr":"08:13"},{"tobuDep":"08:20","tobuType":"特急","tobuDest":"赤城","kukiArr":"08:26","jrDep":"08:32","transferMin":"6","jrType":"普通","jrDest":"品川","shiraokaArr":"08:38"},{"tobuDep":"08:23","tobuType":"区間急行","tobuDest":"館林","kukiArr":"08:30","jrDep":"08:44","transferMin":"14","jrType":"普通","jrDest":"熱海","shiraokaArr":"08:49"},{"tobuDep":"08:39","tobuType":"区間準急","tobuDest":"館林","kukiArr":"08:46","jrDep":"08:55","transferMin":"9","jrType":"普通","jrDest":"逗子","shiraokaArr":"09:01"},{"tobuDep":"08:54","tobuType":"区間準急","tobuDest":"館林","kukiArr":"09:01","jrDep":"09:05","transferMin":"4","jrType":"普通","jrDest":"熱海","shiraokaArr":"09:11"},{"tobuDep":"09:08","tobuType":"区間準急","tobuDest":"館林","kukiArr":"09:15","jrDep":"09:18","transferMin":"3","jrType":"普通","jrDest":"上野","shiraokaArr":"09:24"},{"tobuDep":"09:12","tobuType":"急行","tobuDest":"久喜","kukiArr":"09:18","jrDep":"09:32","transferMin":"14","jrType":"普通","jrDest":"熱海","shiraokaArr":"09:38"},{"tobuDep":"09:20","tobuType":"特急","tobuDest":"赤城","kukiArr":"09:26","jrDep":"09:32","transferMin":"6","jrType":"普通","jrDest":"熱海","shiraokaArr":"09:38"},{"tobuDep":"09:31","tobuType":"区間準急","tobuDest":"館林","kukiArr":"09:38","jrDep":"09:46","transferMin":"8","jrType":"普通","jrDest":"熱海","shiraokaArr":"09:51"},{"tobuDep":"09:45","tobuType":"急行","tobuDest":"久喜","kukiArr":"09:51","jrDep":"10:04","transferMin":"13","jrType":"普通","jrDest":"平塚","shiraokaArr":"10:09"},{"tobuDep":"10:01","tobuType":"急行","tobuDest":"久喜","kukiArr":"10:07","jrDep":"10:18","transferMin":"11","jrType":"普通","jrDest":"平塚","shiraokaArr":"10:24"},{"tobuDep":"10:07","tobuType":"区間急行","tobuDest":"館林","kukiArr":"10:14","jrDep":"10:18","transferMin":"4","jrType":"普通","jrDest":"平塚","shiraokaArr":"10:24"},{"tobuDep":"10:20","tobuType":"特急","tobuDest":"赤城","kukiArr":"10:26","jrDep":"10:37","transferMin":"11","jrType":"普通","jrDest":"熱海","shiraokaArr":"10:43"},{"tobuDep":"10:25","tobuType":"準急","tobuDest":"久喜","kukiArr":"10:32","jrDep":"10:37","transferMin":"5","jrType":"普通","jrDest":"熱海","shiraokaArr":"10:43"},{"tobuDep":"10:49","tobuType":"急行","tobuDest":"久喜","kukiArr":"10:55","jrDep":"11:01","transferMin":"6","jrType":"普通","jrDest":"平塚","shiraokaArr":"11:07"},{"tobuDep":"10:59","tobuType":"特急","tobuDest":"太田","kukiArr":"11:05","jrDep":"11:18","transferMin":"13","jrType":"普通","jrDest":"平塚","shiraokaArr":"11:23"},{"tobuDep":"11:11","tobuType":"急行","tobuDest":"久喜","kukiArr":"11:17","jrDep":"11:41","transferMin":"24","jrType":"普通","jrDest":"熱海","shiraokaArr":"11:47"},{"tobuDep":"11:29","tobuType":"特急","tobuDest":"赤城","kukiArr":"11:35","jrDep":"11:41","transferMin":"6","jrType":"普通","jrDest":"熱海","shiraokaArr":"11:47"},{"tobuDep":"11:31","tobuType":"急行","tobuDest":"久喜","kukiArr":"11:37","jrDep":"11:41","transferMin":"4","jrType":"普通","jrDest":"熱海","shiraokaArr":"11:47"},{"tobuDep":"11:51","tobuType":"急行","tobuDest":"久喜","kukiArr":"11:57","jrDep":"12:16","transferMin":"19","jrType":"普通","jrDest":"平塚","shiraokaArr":"12:22"},{"tobuDep":"12:11","tobuType":"急行","tobuDest":"久喜","kukiArr":"12:17","jrDep":"12:36","transferMin":"19","jrType":"普通","jrDest":"熱海","shiraokaArr":"12:42"},{"tobuDep":"12:29","tobuType":"特急","tobuDest":"赤城","kukiArr":"12:35","jrDep":"12:52","transferMin":"17","jrType":"普通","jrDest":"逗子","shiraokaArr":"12:58"},{"tobuDep":"12:31","tobuType":"急行","tobuDest":"久喜","kukiArr":"12:37","jrDep":"12:52","transferMin":"15","jrType":"普通","jrDest":"逗子","shiraokaArr":"12:58"},{"tobuDep":"12:51","tobuType":"急行","tobuDest":"久喜","kukiArr":"12:57","jrDep":"13:02","transferMin":"5","jrType":"普通","jrDest":"平塚","shiraokaArr":"13:08"},{"tobuDep":"13:11","tobuType":"急行","tobuDest":"久喜","kukiArr":"13:17","jrDep":"13:36","transferMin":"19","jrType":"普通","jrDest":"熱海","shiraokaArr":"13:42"},{"tobuDep":"13:29","tobuType":"特急","tobuDest":"赤城","kukiArr":"13:35","jrDep":"13:51","transferMin":"16","jrType":"普通","jrDest":"逗子","shiraokaArr":"13:57"},{"tobuDep":"13:31","tobuType":"急行","tobuDest":"久喜","kukiArr":"13:37","jrDep":"13:51","transferMin":"14","jrType":"普通","jrDest":"逗子","shiraokaArr":"13:57"},{"tobuDep":"13:51","tobuType":"急行","tobuDest":"久喜","kukiArr":"13:57","jrDep":"14:02","transferMin":"5","jrType":"普通","jrDest":"平塚","shiraokaArr":"14:07"},{"tobuDep":"14:11","tobuType":"急行","tobuDest":"久喜","kukiArr":"14:17","jrDep":"14:33","transferMin":"16","jrType":"普通","jrDest":"小田原","shiraokaArr":"14:40"},{"tobuDep":"14:29","tobuType":"特急","tobuDest":"赤城","kukiArr":"14:35","jrDep":"14:51","transferMin":"16","jrType":"普通","jrDest":"逗子","shiraokaArr":"14:56"},{"tobuDep":"14:31","tobuType":"急行","tobuDest":"久喜","kukiArr":"14:37","jrDep":"14:51","transferMin":"14","jrType":"普通","jrDest":"逗子","shiraokaArr":"14:56"},{"tobuDep":"14:51","tobuType":"急行","tobuDest":"久喜","kukiArr":"14:57","jrDep":"15:00","transferMin":"3","jrType":"普通","jrDest":"小田原","shiraokaArr":"15:06"},{"tobuDep":"15:11","tobuType":"急行","tobuDest":"久喜","kukiArr":"15:17","jrDep":"15:37","transferMin":"20","jrType":"普通","jrDest":"小田原","shiraokaArr":"15:43"},{"tobuDep":"15:29","tobuType":"特急","tobuDest":"赤城","kukiArr":"15:35","jrDep":"15:53","transferMin":"18","jrType":"普通","jrDest":"逗子","shiraokaArr":"15:59"},{"tobuDep":"15:31","tobuType":"急行","tobuDest":"久喜","kukiArr":"15:37","jrDep":"15:53","transferMin":"16","jrType":"普通","jrDest":"逗子","shiraokaArr":"15:59"},{"tobuDep":"15:43","tobuType":"急行","tobuDest":"久喜","kukiArr":"15:49","jrDep":"15:53","transferMin":"4","jrType":"普通","jrDest":"逗子","shiraokaArr":"15:59"},{"tobuDep":"15:59","tobuType":"特急","tobuDest":"太田","kukiArr":"16:05","jrDep":"16:15","transferMin":"10","jrType":"普通","jrDest":"小田原","shiraokaArr":"16:21"},{"tobuDep":"16:01","tobuType":"急行","tobuDest":"久喜","kukiArr":"16:07","jrDep":"16:15","transferMin":"8","jrType":"普通","jrDest":"小田原","shiraokaArr":"16:21"},{"tobuDep":"16:20","tobuType":"急行","tobuDest":"久喜","kukiArr":"16:26","jrDep":"16:34","transferMin":"8","jrType":"普通","jrDest":"伊東","shiraokaArr":"16:40"},{"tobuDep":"16:28","tobuType":"特急","tobuDest":"赤城","kukiArr":"16:34","jrDep":"16:44","transferMin":"10","jrType":"普通","jrDest":"熱海","shiraokaArr":"16:49"},{"tobuDep":"16:41","tobuType":"急行","tobuDest":"久喜","kukiArr":"16:47","jrDep":"16:54","transferMin":"7","jrType":"普通","jrDest":"逗子","shiraokaArr":"17:00"},{"tobuDep":"16:58","tobuType":"特急","tobuDest":"太田","kukiArr":"17:04","jrDep":"17:07","transferMin":"3","jrType":"普通","jrDest":"小田原","shiraokaArr":"17:13"},{"tobuDep":"17:03","tobuType":"急行","tobuDest":"久喜","kukiArr":"17:09","jrDep":"17:20","transferMin":"11","jrType":"普通","jrDest":"上野","shiraokaArr":"17:26"},{"tobuDep":"17:21","tobuType":"急行","tobuDest":"久喜","kukiArr":"17:27","jrDep":"17:33","transferMin":"6","jrType":"普通","jrDest":"熱海","shiraokaArr":"17:39"},{"tobuDep":"17:29","tobuType":"特急","tobuDest":"赤城","kukiArr":"17:35","jrDep":"17:46","transferMin":"11","jrType":"普通","jrDest":"熱海","shiraokaArr":"17:53"},{"tobuDep":"17:42","tobuType":"急行","tobuDest":"久喜","kukiArr":"17:48","jrDep":"17:56","transferMin":"8","jrType":"普通","jrDest":"逗子","shiraokaArr":"18:01"},{"tobuDep":"17:50","tobuType":"特急","tobuDest":"太田","kukiArr":"17:56","jrDep":"18:11","transferMin":"15","jrType":"普通","jrDest":"熱海","shiraokaArr":"18:17"},{"tobuDep":"18:03","tobuType":"急行","tobuDest":"久喜","kukiArr":"18:09","jrDep":"18:23","transferMin":"14","jrType":"普通","jrDest":"大船","shiraokaArr":"18:28"},{"tobuDep":"18:20","tobuType":"特急","tobuDest":"赤城","kukiArr":"18:26","jrDep":"18:39","transferMin":"13","jrType":"普通","jrDest":"小田原","shiraokaArr":"18:44"},{"tobuDep":"18:23","tobuType":"急行","tobuDest":"久喜","kukiArr":"18:29","jrDep":"18:39","transferMin":"10","jrType":"普通","jrDest":"小田原","shiraokaArr":"18:44"},{"tobuDep":"18:36","tobuType":"区間準急","tobuDest":"館林","kukiArr":"18:43","jrDep":"18:51","transferMin":"8","jrType":"普通","jrDest":"逗子","shiraokaArr":"18:56"},{"tobuDep":"18:45","tobuType":"急行","tobuDest":"久喜","kukiArr":"18:51","jrDep":"18:58","transferMin":"7","jrType":"普通","jrDest":"小田原","shiraokaArr":"19:04"},{"tobuDep":"18:50","tobuType":"特急","tobuDest":"太田","kukiArr":"18:56","jrDep":"19:12","transferMin":"16","jrType":"普通","jrDest":"小田原","shiraokaArr":"19:18"},{"tobuDep":"18:53","tobuType":"区間準急","tobuDest":"館林","kukiArr":"19:00","jrDep":"19:12","transferMin":"12","jrType":"普通","jrDest":"小田原","shiraokaArr":"19:18"},{"tobuDep":"19:04","tobuType":"急行","tobuDest":"久喜","kukiArr":"19:10","jrDep":"19:21","transferMin":"11","jrType":"普通","jrDest":"逗子","shiraokaArr":"19:27"},{"tobuDep":"19:20","tobuType":"特急","tobuDest":"赤城","kukiArr":"19:26","jrDep":"19:33","transferMin":"7","jrType":"普通","jrDest":"平塚","shiraokaArr":"19:39"},{"tobuDep":"19:23","tobuType":"急行","tobuDest":"久喜","kukiArr":"19:29","jrDep":"19:33","transferMin":"4","jrType":"普通","jrDest":"平塚","shiraokaArr":"19:39"},{"tobuDep":"19:34","tobuType":"区間準急","tobuDest":"館林","kukiArr":"19:41","jrDep":"19:50","transferMin":"9","jrType":"普通","jrDest":"大船","shiraokaArr":"19:56"},{"tobuDep":"19:43","tobuType":"急行","tobuDest":"久喜","kukiArr":"19:49","jrDep":"19:58","transferMin":"9","jrType":"普通","jrDest":"熱海","shiraokaArr":"20:04"},{"tobuDep":"19:50","tobuType":"特急","tobuDest":"赤城","kukiArr":"19:56","jrDep":"20:08","transferMin":"12","jrType":"普通","jrDest":"上野","shiraokaArr":"20:14"},{"tobuDep":"19:53","tobuType":"区間準急","tobuDest":"館林","kukiArr":"20:00","jrDep":"20:08","transferMin":"8","jrType":"普通","jrDest":"上野","shiraokaArr":"20:14"},{"tobuDep":"20:04","tobuType":"急行","tobuDest":"久喜","kukiArr":"20:10","jrDep":"20:14","transferMin":"4","jrType":"普通","jrDest":"平塚","shiraokaArr":"20:19"},{"tobuDep":"20:20","tobuType":"特急","tobuDest":"伊勢崎","kukiArr":"20:26","jrDep":"20:38","transferMin":"12","jrType":"普通","jrDest":"小田原","shiraokaArr":"20:43"},{"tobuDep":"20:24","tobuType":"急行","tobuDest":"久喜","kukiArr":"20:30","jrDep":"20:38","transferMin":"8","jrType":"普通","jrDest":"小田原","shiraokaArr":"20:43"},{"tobuDep":"20:35","tobuType":"区間準急","tobuDest":"久喜","kukiArr":"20:42","jrDep":"20:46","transferMin":"4","jrType":"普通","jrDest":"逗子","shiraokaArr":"20:52"},{"tobuDep":"20:50","tobuType":"特急","tobuDest":"赤城","kukiArr":"20:56","jrDep":"21:04","transferMin":"8","jrType":"普通","jrDest":"上野","shiraokaArr":"21:10"},{"tobuDep":"20:55","tobuType":"区間準急","tobuDest":"館林","kukiArr":"21:02","jrDep":"21:20","transferMin":"18","jrType":"普通","jrDest":"上野","shiraokaArr":"21:25"},{"tobuDep":"21:08","tobuType":"準急","tobuDest":"久喜","kukiArr":"21:15","jrDep":"21:20","transferMin":"5","jrType":"普通","jrDest":"上野","shiraokaArr":"21:25"},{"tobuDep":"21:20","tobuType":"特急","tobuDest":"葛生","kukiArr":"21:26","jrDep":"21:32","transferMin":"6","jrType":"普通","jrDest":"大船","shiraokaArr":"21:38"},{"tobuDep":"21:32","tobuType":"区間準急","tobuDest":"館林","kukiArr":"21:39","jrDep":"21:45","transferMin":"6","jrType":"普通","jrDest":"国府津","shiraokaArr":"21:50"},{"tobuDep":"21:44","tobuType":"急行","tobuDest":"久喜","kukiArr":"21:50","jrDep":"22:04","transferMin":"14","jrType":"普通","jrDest":"平塚","shiraokaArr":"22:10"},{"tobuDep":"21:50","tobuType":"特急","tobuDest":"赤城","kukiArr":"21:56","jrDep":"22:04","transferMin":"8","jrType":"普通","jrDest":"平塚","shiraokaArr":"22:10"},{"tobuDep":"22:07","tobuType":"区間急行","tobuDest":"館林","kukiArr":"22:14","jrDep":"22:22","transferMin":"8","jrType":"普通","jrDest":"上野","shiraokaArr":"22:28"},{"tobuDep":"22:20","tobuType":"特急","tobuDest":"太田","kukiArr":"22:26","jrDep":"22:30","transferMin":"4","jrType":"普通","jrDest":"上野","shiraokaArr":"22:36"},{"tobuDep":"22:30","tobuType":"区間急行","tobuDest":"館林","kukiArr":"22:37","jrDep":"22:51","transferMin":"14","jrType":"普通","jrDest":"上野","shiraokaArr":"22:57"},{"tobuDep":"22:49","tobuType":"区間急行","tobuDest":"館林","kukiArr":"22:56","jrDep":"23:15","transferMin":"19","jrType":"普通","jrDest":"上野","shiraokaArr":"23:20"},{"tobuDep":"23:00","tobuType":"特急","tobuDest":"館林","kukiArr":"23:06","jrDep":"23:15","transferMin":"9","jrType":"普通","jrDest":"上野","shiraokaArr":"23:20"},{"tobuDep":"23:17","tobuType":"区間準急","tobuDest":"館林","kukiArr":"23:24","jrDep":"23:37","transferMin":"13","jrType":"普通","jrDest":"大宮","shiraokaArr":"23:42"},{"tobuDep":"23:37","tobuType":"区間急行","tobuDest":"館林","kukiArr":"23:44","jrDep":"---","transferMin":"","jrType":"","jrDest":"","shiraokaArr":"当日接続なし"},{"tobuDep":"23:55","tobuType":"区間急行","tobuDest":"館林","kukiArr":"00:02","jrDep":"---","transferMin":"","jrType":"","jrDest":"","shiraokaArr":"当日接続なし"}];
+
+    const weekdayKukiTrains = [{"time":"05:12","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"05:43","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"06:05","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"06:20","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"06:33","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"06:37","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"06:57","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"07:13","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"07:29","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう1号","serviceNameEn":"Revaty Ryomo 1"},{"time":"07:34","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"07:43","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"07:56","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"08:04","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"08:20","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう3号","serviceNameEn":"Ryomo 3"},{"time":"08:23","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"08:41","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"08:44","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"09:04","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"09:20","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう5号","serviceNameEn":"Ryomo 5"},{"time":"09:23","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"09:31","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"09:43","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"10:07","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"10:20","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう7号","serviceNameEn":"Ryomo 7"},{"time":"10:26","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"10:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"10:49","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"10:59","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"太田","destEn":"Ota","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう9号","serviceNameEn":"Revaty Ryomo 9"},{"time":"11:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"11:29","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう11号","serviceNameEn":"Ryomo 11"},{"time":"11:32","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"11:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"12:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"12:29","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう13号","serviceNameEn":"Revaty Ryomo 13"},{"time":"12:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"12:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"13:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"13:29","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう15号","serviceNameEn":"Revaty Ryomo 15"},{"time":"13:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"13:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"14:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"14:29","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう17号","serviceNameEn":"Ryomo 17"},{"time":"14:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"14:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"15:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"15:29","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう19号","serviceNameEn":"Ryomo 19"},{"time":"15:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"15:43","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"15:59","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"太田","destEn":"Ota","cars":"6","isFirst":false,"serviceNameJa":"りょうもう21号","serviceNameEn":"Ryomo 21"},{"time":"16:01","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"16:20","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"16:28","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう23号","serviceNameEn":"Ryomo 23"},{"time":"16:41","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"16:58","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"太田","destEn":"Ota","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう25号","serviceNameEn":"Revaty Ryomo 25"},{"time":"17:03","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"17:22","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"17:29","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう27号","serviceNameEn":"Revaty Ryomo 27"},{"time":"17:42","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"17:50","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"太田","destEn":"Ota","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう29号","serviceNameEn":"Revaty Ryomo 29"},{"time":"18:04","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"18:10","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"18:20","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう31号","serviceNameEn":"Revaty Ryomo 31"},{"time":"18:23","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"18:36","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"18:43","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"18:50","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"太田","destEn":"Ota","cars":"6","isFirst":false,"serviceNameJa":"りょうもう33号","serviceNameEn":"Ryomo 33"},{"time":"18:53","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"19:04","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"19:20","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう35号","serviceNameEn":"Ryomo 35"},{"time":"19:23","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"19:35","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"19:43","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"19:50","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう37号","serviceNameEn":"Ryomo 37"},{"time":"19:53","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"20:05","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"20:20","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"伊勢崎","destEn":"Isesaki","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう39号","serviceNameEn":"Revaty Ryomo 39"},{"time":"20:24","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"20:34","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"久喜","destEn":"Kuki","cars":"6","isFirst":false},{"time":"20:43","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"20:50","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう41号","serviceNameEn":"Ryomo 41"},{"time":"20:53","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"21:08","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"21:20","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"葛生","destEn":"Kuzuu","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう43号","serviceNameEn":"Revaty Ryomo 43"},{"time":"21:32","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"21:44","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"21:50","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう45号","serviceNameEn":"Revaty Ryomo 45"},{"time":"21:59","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"22:05","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"22:20","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"太田","destEn":"Ota","cars":"6","isFirst":false,"serviceNameJa":"りょうもう47号","serviceNameEn":"Ryomo 47"},{"time":"22:25","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"22:49","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"23:00","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう49号","serviceNameEn":"Revaty Ryomo 49"},{"time":"23:17","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"23:37","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"23:55","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"24:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false}];
+
+    const holidayKukiTrains = [{"time":"05:12","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"05:43","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"06:05","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"06:20","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"06:37","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"06:57","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"07:13","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"07:29","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう1号","serviceNameEn":"Revaty Ryomo 1"},{"time":"07:34","typeJa":"普通","typeEn":"Local","badge":"badge-local","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"07:45","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"07:56","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"08:20","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう3号","serviceNameEn":"Ryomo 3"},{"time":"08:23","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"08:39","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"08:54","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"09:08","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"09:12","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"09:20","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう5号","serviceNameEn":"Ryomo 5"},{"time":"09:31","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"09:45","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"10:01","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"10:07","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"10:20","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう7号","serviceNameEn":"Ryomo 7"},{"time":"10:25","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"10:49","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"10:59","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"太田","destEn":"Ota","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう9号","serviceNameEn":"Revaty Ryomo 9"},{"time":"11:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"11:29","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう11号","serviceNameEn":"Ryomo 11"},{"time":"11:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"11:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"12:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"12:29","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう13号","serviceNameEn":"Revaty Ryomo 13"},{"time":"12:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"12:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"13:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"13:29","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう15号","serviceNameEn":"Revaty Ryomo 15"},{"time":"13:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"13:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"14:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"14:29","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう17号","serviceNameEn":"Ryomo 17"},{"time":"14:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"14:51","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"15:11","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"15:29","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう19号","serviceNameEn":"Ryomo 19"},{"time":"15:31","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"15:43","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"15:59","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"太田","destEn":"Ota","cars":"6","isFirst":false,"serviceNameJa":"りょうもう21号","serviceNameEn":"Ryomo 21"},{"time":"16:01","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"16:20","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"16:28","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう23号","serviceNameEn":"Ryomo 23"},{"time":"16:41","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"16:58","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"太田","destEn":"Ota","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう25号","serviceNameEn":"Revaty Ryomo 25"},{"time":"17:03","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"17:21","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"17:29","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう27号","serviceNameEn":"Revaty Ryomo 27"},{"time":"17:42","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"17:50","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"太田","destEn":"Ota","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう29号","serviceNameEn":"Revaty Ryomo 29"},{"time":"18:03","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"18:20","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう31号","serviceNameEn":"Revaty Ryomo 31"},{"time":"18:23","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"18:36","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"18:45","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"18:50","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"太田","destEn":"Ota","cars":"6","isFirst":false,"serviceNameJa":"りょうもう33号","serviceNameEn":"Ryomo 33"},{"time":"18:53","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"19:04","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"19:20","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう35号","serviceNameEn":"Ryomo 35"},{"time":"19:23","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"19:34","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"19:43","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"19:50","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう37号","serviceNameEn":"Ryomo 37"},{"time":"19:53","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"20:04","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"20:20","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"伊勢崎","destEn":"Isesaki","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう39号","serviceNameEn":"Revaty Ryomo 39"},{"time":"20:24","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"20:35","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"久喜","destEn":"Kuki","cars":"6","isFirst":false},{"time":"20:50","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"りょうもう41号","serviceNameEn":"Ryomo 41"},{"time":"20:55","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"21:08","typeJa":"準急","typeEn":"Semi Exp.","badge":"badge-semi","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"21:20","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"葛生","destEn":"Kuzuu","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう43号","serviceNameEn":"Revaty Ryomo 43"},{"time":"21:32","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"21:44","typeJa":"急行","typeEn":"Express","badge":"badge-express","destJa":"久喜","destEn":"Kuki","cars":"10","isFirst":false},{"time":"21:50","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"赤城","destEn":"Akagi","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう45号","serviceNameEn":"Revaty Ryomo 45"},{"time":"22:07","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"22:20","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"太田","destEn":"Ota","cars":"6","isFirst":false,"serviceNameJa":"りょうもう47号","serviceNameEn":"Ryomo 47"},{"time":"22:30","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"22:49","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"23:00","typeJa":"特急","typeEn":"Limited Exp.","badge":"badge-ltd","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false,"serviceNameJa":"リバティりょうもう49号","serviceNameEn":"Revaty Ryomo 49"},{"time":"23:17","typeJa":"区間準急","typeEn":"Section Semi Exp.","badge":"badge-semi","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"23:37","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false},{"time":"23:55","typeJa":"区間急行","typeEn":"Section Exp.","badge":"badge-express","destJa":"館林","destEn":"Tatebayashi","cars":"6","isFirst":false}];
+
+    updateHeaderTexts();
+    updateClock();
+    updateMonitor();
+    checkRealtimeInfo();
+    setInterval(updateMonitor, 1000);
+    setInterval(checkRealtimeInfo, 60000);
+  </script>
+</body>
+</html>
